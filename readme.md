@@ -12,18 +12,80 @@ UE4用移動ロボットシミュレータプラグインであるCageの、通�
  + ZMQ/JSONレベルの通信をpythonで実装したサンプル _sample*.py_
  + rosと連携するサンプル _cage_ros_bridge/_
 
-## できること
+### 動作環境および依存ライブラリ
+
+実際にビルドを確認している環境は Ubuntu 18.04です。
+標準C++ライブラリのほか、[ZeroMQ](http://zeromq.org)と[nlohmann::json](https://github.com/nlohmann/json)を使用しています。これらのライブラリが動作する環境であればUbuntu 18.04以外でも多くの環境でビルドできることが期待できます。
+
+なお、ROSのサンプルは Ubuntu 18.04 上の [ROS Melodic Morenia](http://wiki.ros.org/melodic/Installation) での動作を確認しています。また、Pythonのサンプルには [pyzmq](https://pyzmq.readthedocs.io/en/latest/) が必要です。
+
+### License
+
+This software is available under the [MIT License](https://opensource.org/licenses/mit-license.php).
+
+## Quick Start
+
+ROSと接続して使う場合にはcage_ros_bridgeを(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeに似たようプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機のフレームワークに適合するプログラムを作ってください。
+
+シミュレータと通信して簡単な動きを指示する例をsampleRun.ccにざっと実装してありますので、まずはこれを眺めてみてください。sampleRun.ccは車輪の回転速度から並進移動量を計算し、10m直進したら止まって終了します。
+
+シミュレータに接続するには
+
+``` c++
+  CageAPI cage(server);
+  cage.connect();
+```
+
+とします。その後は
+
+``` c++
+    CageAPI::vehicleStatus vst;
+    cage.getStatusOne(vst);
+```
+
+としてステータスを受信し、
+
+``` c++
+  cage.setVW(0.20,0);
+```
+
+などとして車輪を回転させるコマンドを送信することを繰り返します。より詳しい例はROSのサンプルcage_ros_bridgeを参照してください。
+
+----
+
+## 簡易リファレンス
 
 ### cageclient.hh
 
-CommActorに接続し、指定したActorにコマンドを送信し、またステータスを受信する機能をまとめたものです。コマンド送信は次の2つです。
+CommActorに接続し、指定したActorにコマンドを送信し、またステータスを受信する機能をまとめたものです。シミュレータに接続するにはCageAPIのインスタンスを作り、connect()を呼びます。接続先アドレスpeerAddrは省略できませんが、対象とするロボット名targetVehicleは省略でき、その場合最初に見つかったものを使います。
+
+``` c++
+ class CageAPI{
+  CageAPI(std::string peerAddr);
+  CageAPI(std::string peerAddr, std::string targetVehicle);
+  bool connect();
+```
+
+コマンド送信は次の2つです。
 
 ``` c++
   bool setRpm(double rpmL, double rpmR);
   bool setVW(double V, double W);        // [m/s], [rad/s]
 ```
 
-これらを呼ぶと直ちにコマンドが送信されます。
+これらを呼ぶと直ちにコマンドが送信されます。setRpmもsetVWもどちらも車輪の回転数を指示するコマンドで、setVWの場合はシミュレータ側で支持された速度を達成する左右の目標回転速度を計算します。setRpmはこれをバイパスして直接目標回転速度を与えることができます。
+
+適切な回転速度を求めるには車輪の大きさと配置を知る必要がありますが、これはconnect()時にシミュレータから値を取得し、CageAPI::VehicleInfo に格納されます。
+
+``` c++
+  struct vehicleInfo{
+    std::string name;
+    double WheelPerimeterL;  [m]
+    double WheelPerimeterR;  [m]
+    double TreadWidth;       [m]
+    double ReductionRatio;
+  } VehicleInfo;
+```
 
 ステータス受信の主要なインタフェースは次のとおりです。
 
@@ -46,7 +108,7 @@ getStatusOneを呼ぶと台車の情報(CageAPI::vehicleStatus)が得られま�
   };
 ```
 
-なお、UE4の座標系は左手系ですが、vehicleStatusには右手系にしたものが入ります。
+なお、UE4の座標系は左手系ですが、vehicleStatusには(Y軸を反転することで)右手系にしたものが入ります。
 
 ### subscriber.hh
 
@@ -58,7 +120,7 @@ CommActorに接続し、各種コマンドを送信する手続きをまとめ�
 
 ### simConsole
 
-CommActorに接続し、操作可能なActorの列挙もしくはコンソールコマンドの実行をリクエストします。
+CommActorに接続し、操作可能なActorの列挙もしくはコンソールコマンドの実行をリクエストするプログラムです。
 
 操作可能な移動体を列挙するには次のように実行します。
 
@@ -80,10 +142,10 @@ Result:
 $ simConsole -s [IP Address] [console command]
 ```
 
-例えばTC2018マップを開始するには次のようにします。
+例えばVTCマップを開始するには次のようにします。
 
 ```
-$ simConsole -s [IP Address] servertravel TC2018
+$ simConsole -s [IP Address] servertravel VTC
 ```
 
 その他使えそうなコンソールコマンドの一部を次に列挙します。
@@ -121,6 +183,10 @@ rosと接続するサンプル(cage_ros_bridge)です。以下の機能を持ち
  + odom/ トピックに車輪回転速度とyaw軸角速度を積算したオドメトリを配信する
  + odom_gt/ トピックに位置と姿勢を配信する
  + imu/ トピックに加速度と角速度を配信する
+
+### sampleRun
+
+Quick Start で説明した、10m走行して止まるサンプルプログラムです。
 
 ## その他補足
 

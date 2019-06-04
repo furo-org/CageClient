@@ -41,9 +41,11 @@ endif(MSVC)
 
 add_executable(simconsole simConsole.cpp)
 add_executable(sampleSubscriber sampleSubscriber.cc)
+add_executable(sampleRun sampleRun.cc)
 
 target_link_libraries(simconsole Boost::program_options ${ZMQ_LIBRARY})
 target_link_libraries(sampleSubscriber Boost::program_options ${ZMQ_LIBRARY})
+target_link_libraries(sampleRun ${ZMQ_LIBRARY})
 
 add_library(simIF INTERFACE)
 target_include_directories(simIF INTERFACE

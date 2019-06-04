@@ -32,15 +32,15 @@ public:
   };
   struct vehicleInfo{
     std::string name;
-    double WheelPerimeterL;
-    double WheelPerimeterR;
-    double TreadWidth;
+    double WheelPerimeterL;  [m]
+    double WheelPerimeterR;  [m]
+    double TreadWidth;       [m]
     double ReductionRatio;
   } VehicleInfo;
 
   // construct CageAPI object. peer format: "SimulatorAddress/VehicleName"
   //   note: '/VehicleName' can be omitted.
-  CageAPI(std::string peer);
+  CageAPI(std::string peerAddr);
 
   // construct CageAPI object. targetVehicle can be empty string
   CageAPI(std::string peerAddr, std::string targetVehicle);
