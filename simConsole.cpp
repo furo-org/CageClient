@@ -1,3 +1,8 @@
+// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+/*
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
 #include "zmq_nt.hpp"
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>

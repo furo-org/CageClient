@@ -1,3 +1,9 @@
+// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+/*
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+
 #pragma once
 
 #include "console.hh"
@@ -5,7 +11,7 @@
 #include <string>
 #include <cmath>
 
-class CageAPI{
+    class CageAPI{
   std::unique_ptr<zmq::context_t> ZCtx;
   std::string Endpoint;
   std::string VehicleName;

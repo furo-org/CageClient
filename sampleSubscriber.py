@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+#This software is released under the MIT License.
+#http://opensource.org/licenses/mit-license.php
+
 
 # Dump all information published by cage::CommActor
 import zmq

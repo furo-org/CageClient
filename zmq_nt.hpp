@@ -23,6 +23,10 @@
     IN THE SOFTWARE.
 */
 
+/*
+ noexcept version of zmq.hpp, modified by yoshida@furo.org.
+*/
+
 #ifndef __ZMQ_HPP_INCLUDED__
 #define __ZMQ_HPP_INCLUDED__
 

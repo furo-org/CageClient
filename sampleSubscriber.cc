@@ -1,8 +1,13 @@
+// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+/*
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include<iomanip>
 #include <signal.h>
-//#include "subscriber.hh"
 #include"cageclient.hh"
 
 namespace bo = boost::program_options;

@@ -1,4 +1,10 @@
-﻿#include "zmq_nt.hpp"
+﻿// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+/*
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+
+#include "zmq_nt.hpp"
 
 #include <iostream>
 #include <memory>
