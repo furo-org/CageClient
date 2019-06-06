@@ -1,4 +1,4 @@
-# CageのCommActorと通信するライブラリ CageClient
+# Cage PluginのCommActorと通信するライブラリ CageClient
 
 ## 概要
 
@@ -25,18 +25,31 @@ This software is available under the [MIT License](https://opensource.org/licens
 
 ## Quick Start
 
-ROSと接続して使う場合にはcage_ros_bridgeを(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeに似たようプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機のフレームワークに適合するプログラムを作ってください。
+まずCage Pluginを導入したシミュレータを用意してください。ちょっと試してみるだけならば[VTC2018](https://github.com/furo-org/VTC2018)を[パッケージしたバイナリ(64bit Windows版)](https://chibakoudai-my.sharepoint.com/:u:/g/personal/yoshida_tomoaki_p_chibakoudai_jp/ER00YHh9YYFEpBnFCl16Ug4BnmRve_PuS1y1sB2-dvryDw?e=cxDaMb)を使ってみてください。zipを展開してVTC2018.exeを起動するだけです。全画面とウィンドウモードの切り替えはAlt-Enterで、終了はAlt-F4です。
+なお、パッケージ版はUnreal Editorとは違い世界に干渉する手段がかなり限られますのでその点は注意が必要です。
 
-シミュレータと通信して簡単な動きを指示する例をsampleRun.ccにざっと実装してありますので、まずはこれを眺めてみてください。sampleRun.ccは車輪の回転速度から並進移動量を計算し、10m直進したら止まって終了します。
+ROSで動くプログラムと接続して使う場合にはcage_ros_bridgeを(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeに似たようプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機用フレームワークに適合するプログラムを作ってください。
 
-シミュレータに接続するには
+シミュレータと通信して簡単な動きを指示する例をsampleRun.ccにざっと実装してありますので、まずはこれを眺めてみてください。sampleRun.ccは車輪の回転速度から並進移動量を計算し、10m直進したら止まって終了します。より詳しい使い方の例はROSのサンプルcage_ros_bridgeを参照してください。
+
+ビルドはCMakeを使います。
+
+```
+mkdir build
+cd build
+cmake ..
+make
+./sampleRun [シミュレータが動作するPCのIP]
+```
+
+sampleRunサンプルでは、以下のようにしてシミュレータに接続しています。
 
 ``` c++
   CageAPI cage(server);
   cage.connect();
 ```
 
-とします。その後は
+その後は
 
 ``` c++
     CageAPI::vehicleStatus vst;
@@ -49,7 +62,7 @@ ROSと接続して使う場合にはcage_ros_bridgeを(必要に応じて修正�
   cage.setVW(0.20,0);
 ```
 
-などとして車輪を回転させるコマンドを送信することを繰り返します。より詳しい例はROSのサンプルcage_ros_bridgeを参照してください。
+などとして車輪を回転させるコマンドを送信しています。その後ループで並進移動距離を積算し、10mに達したら停止するコマンドを送信するようにしています。
 
 ----
 
