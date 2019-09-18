@@ -93,9 +93,9 @@ CommActorに接続し、指定したActorにコマンドを送信し、またス
 ``` c++
   struct vehicleInfo{
     std::string name;
-    double WheelPerimeterL;  [m]
-    double WheelPerimeterR;  [m]
-    double TreadWidth;       [m]
+    double WheelPerimeterL; // [m]
+    double WheelPerimeterR; // [m]
+    double TreadWidth;      // [m]
     double ReductionRatio;
   } VehicleInfo;
 ```
