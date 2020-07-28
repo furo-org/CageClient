@@ -10,7 +10,9 @@ UE4用移動ロボットシミュレータプラグインであるCageの、通�
  + 受信した移動台車のステータス(JSON)を単に画面に表示するサンプル _sampleSubscriber_
  + UE4コンソールコマンド実行をリクエストするサンプル _simConsole_
  + ZMQ/JSONレベルの通信をpythonで実装したサンプル _sample*.py_
- + rosと連携するサンプル _cage_ros_bridge/_
+ + rosと連携するサンプル [cage_ros_stack](https://github.com/furo-org/cage_ros_stack)
+
+ライブラリとしてのCageClientはheaderonlyなので、アプリケーションは_cageclient.hh_をincludeして依存ライブラリ(zeromq)をリンクすれば利用できます。
 
 ### 動作環境および依存ライブラリ
 
@@ -28,7 +30,7 @@ This software is available under the [MIT License](https://opensource.org/licens
 まずCage Pluginを導入したシミュレータを用意してください。ちょっと試してみるだけならば[VTC2018](https://github.com/furo-org/VTC2018)を[パッケージしたバイナリ(64bit Windows版)](https://chibakoudai-my.sharepoint.com/:u:/g/personal/yoshida_tomoaki_p_chibakoudai_jp/ER00YHh9YYFEpBnFCl16Ug4BnmRve_PuS1y1sB2-dvryDw?e=cxDaMb)を使ってみてください。zipを展開してVTC2018.exeを起動するだけです。全画面とウィンドウモードの切り替えはAlt-Enterで、終了はAlt-F4です。
 なお、パッケージ版はUnreal Editorとは違い世界に干渉する手段がかなり限られますのでその点は注意が必要です。
 
-ROSで動くプログラムと接続して使う場合にはcage_ros_bridgeを(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeに似たようプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機用フレームワークに適合するプログラムを作ってください。
+ROSで動くプログラムと接続して使う場合には[cage_ros_stack](https://github.com/furo-org/cage_ros_stack)を(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeと同等のプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機用フレームワークに適合するプログラムを作ってください。
 
 シミュレータと通信して簡単な動きを指示する例をsampleRun.ccにざっと実装してありますので、まずはこれを眺めてみてください。sampleRun.ccは車輪の回転速度から並進移動量を計算し、10m直進したら止まって終了します。より詳しい使い方の例はROSのサンプルcage_ros_bridgeを参照してください。
 
@@ -37,9 +39,9 @@ ROSで動くプログラムと接続して使う場合にはcage_ros_bridgeを(�
 ```
 mkdir build
 cd build
-cmake ..
+cmake .. -DBUILD_CAGE_EXAMPLES=ON -DBUILD_CAGE_CLI=ON
 make
-./sampleRun [シミュレータが動作するPCのIP]
+./examples/sampleRun [シミュレータが動作するPCのIP]
 ```
 
 sampleRunサンプルでは、以下のようにしてシミュレータに接続しています。
@@ -64,6 +66,14 @@ sampleRunサンプルでは、以下のようにしてシミュレータに接�
 
 などとして車輪を回転させるコマンドを送信しています。その後ループで並進移動距離を積算し、10mに達したら停止するコマンドを送信するようにしています。
 
+ユーザプログラムからCageClientを使う場合はCageClientを(git submoduleなどで)サブディレクトリに配置し、CMake で add_subdirectory してください。その後cageClientIFターゲットをリンクすれば必要な設定が行われます。
+
+``` cmake
+ add_subdirectory(CageClient)
+ add_executable(UserCode usercode.cc)
+ target_link_libraries(UserCode cageClientIF)
+```
+
 ----
 
 ## 簡易リファレンス
@@ -86,7 +96,7 @@ CommActorに接続し、指定したActorにコマンドを送信し、またス
   bool setVW(double V, double W);        // [m/s], [rad/s]
 ```
 
-これらを呼ぶと直ちにコマンドが送信されます。setRpmもsetVWもどちらも車輪の回転数を指示するコマンドで、setVWの場合はシミュレータ側で支持された速度を達成する左右の目標回転速度を計算します。setRpmはこれをバイパスして直接目標回転速度を与えることができます。
+これらを呼ぶと直ちにコマンドが送信されます。setRpmもsetVWもどちらも車輪の回転数を指示するコマンドで、setVWの場合はシミュレータ側で支持された速度を達成する左右の目標回転速度を計算します。setRpmはこれをバイパスして直接目標回転速度を与えることができます。通常はどちらか一つを使います。
 
 適切な回転速度を求めるには車輪の大きさと配置を知る必要がありますが、これはconnect()時にシミュレータから値を取得し、CageAPI::VehicleInfo に格納されます。
 
@@ -133,7 +143,7 @@ CommActorに接続し、各種コマンドを送信する手続きをまとめ�
 
 ### simConsole
 
-CommActorに接続し、操作可能なActorの列挙もしくはコンソールコマンドの実行をリクエストするプログラムです。
+CommActorに接続し、操作可能なActorの列挙もしくはコンソールコマンドの実行をリクエストするプログラムです。CMakeのconfigure時にBUILD_CAGE_CLIスイッチをONにしている場合にビルドされます。
 
 操作可能な移動体を列挙するには次のように実行します。
 
@@ -167,14 +177,6 @@ $ simConsole -s [IP Address] servertravel VTC
 
 指定したマップに移動
 
-#### stat FPS
-
-現在のFPSと1フレームの処理に要した時間を表示
-
-#### toggleDebugCamera
-
-操作している人から離れ、自由な視点から観測
-
 #### quit
 
 終了
@@ -188,14 +190,9 @@ CommActorにコンソールコマンドを送信する低レベルの送受信�
 CommActor に接続し、流れてくる情報を画面に出力するサンプルです。
 c++バージョンは cageclient API を使って実装しています。それに対しpythonバージョンはzmqpyを使い、低レベルの送受信をそのまま書いています。
 
-### cage_ros_bridge/
+### ~~cage_ros_bridge/~~
 
-rosと接続するサンプル(cage_ros_bridge)です。以下の機能を持ちます。
- 
- + cmd_vel/トピックを購読し、setVWコマンドを送信する
- + odom/ トピックに車輪回転速度とyaw軸角速度を積算したオドメトリを配信する
- + odom_gt/ トピックに位置と姿勢を配信する
- + imu/ トピックに加速度と角速度を配信する
+rosと接続するサンプル(cage_ros_bridge)です。[cage_ros_stack](https://github.com/furo-org/cage_ros_stack) リポジトリに移動しました。
 
 ### sampleRun
 
