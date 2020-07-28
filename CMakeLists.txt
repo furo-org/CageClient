@@ -1,54 +1,33 @@
-project(sim_ue)
+cmake_minimum_required(VERSION 3.10)
+project(CageClient)
 
-find_package(Boost COMPONENTS system thread date_time serialization filesystem program_options REQUIRED)
-find_package(SDL2)
+set(BUILD_CAGE_EXAMPLES OFF CACHE BOOL "Build example codes")
+set(BUILD_CAGE_CLI OFF CACHE BOOL "Build simconsole tool")
+
 set(ZMQ_LIBRARY zmq)
 if (MSVC)
-find_package(MsgPack)
 find_package(zeromq)
 set(ZMQ_INCLUDE_DIR $ENV{ZMQ_INCLUDE_DIR})
 set(ZMQ_LIBRARY_DIR $ENV{ZMQ_LIBRARY_DIR})
 set(ZMQ_LIBRARY libzmq)
 endif(MSVC)
 
-include_directories(
-    ${Boost_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIR}
-    ${MSGPACK_INCLUDE_DIR}
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/json/include
-    ${ZMQ_INCLUDE_DIR}
+# link this interface library with application code
+add_library(cageClientIF INTERFACE)
+target_include_directories(cageClientIF INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/json/include"
+  ${ZMQ_INCLUDE_DIR}
 )
 
-link_directories(
-    ${Boost_LIBRARY_DIRS}
-    ${Boost_LIBRARY_DIR}
-    ${ZMQ_LIBRARY_DIR}
-    ${SDL2_LIBDIR}
+target_link_libraries(cageClientIF INTERFACE
+    ${ZMQ_LIBRARY}
 )
 
-if(MSVC)
-set(SHM_LIBRARIES
-    ${Boost_LIBRARIES}
-    libzmq
-)
-else(MSVC)
-set(SHM_LIBRARIES
-    ${Boost_LIBRARIES}
-    zmq
-)
-endif(MSVC)
+if(BUILD_CAGE_CLI)
+add_subdirectory(srcs)
+endif()
 
-add_executable(simconsole simConsole.cpp)
-add_executable(sampleSubscriber sampleSubscriber.cc)
-add_executable(sampleRun sampleRun.cc)
-
-target_link_libraries(simconsole Boost::program_options ${ZMQ_LIBRARY})
-target_link_libraries(sampleSubscriber Boost::program_options ${ZMQ_LIBRARY})
-target_link_libraries(sampleRun ${ZMQ_LIBRARY})
-
-add_library(simIF INTERFACE)
-target_include_directories(simIF INTERFACE
-"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/json/include"
-)
+if(BUILD_CAGE_EXAMPLES)
+add_subdirectory(examples)
+endif()
