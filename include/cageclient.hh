@@ -1,11 +1,10 @@
-// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+// Copyright 2018-2020 Tomoaki Yoshida<yoshida@furo.org>
 /*
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
 #pragma once
-
 #include "console.hh"
 #include "subscriber.hh"
 #include <string>
@@ -164,7 +163,7 @@ bool CageAPI::connect(){
 
   Subscriber->addTargetActor(endpoint);
   Endpoint=endpoint;
-  nlohmann::json meta;
+  Json meta;
   if(!Console->getActorMetadata(endpoint, meta)){
     setError("Failed to fetch vehicle metadata");
     return false;
@@ -184,6 +183,7 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
 {
   if(!poll(timeout_us))return false;
   auto j=Subscriber->recvOne();
+  //std::cout<<"Recv:["<<j<<"]"<<std::endl;
   if (j.find("Data") == j.end()) {
     setErrorStrm([](auto &ost) { ost << "Unexpected json structure."; });
     return false;
@@ -200,7 +200,7 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
     vst.rrpm=static_cast<double>(r["RightRpm"]);
   auto accel=r.find("Accel");
   if(accel!=r.end()){
-    nlohmann::json a=*accel;
+    Json a=*accel;
     // cm/s^2 -> m/s^2
     vst.ax=static_cast<double>(a["X"])/100.;
     vst.ay=static_cast<double>(a["Y"])/100. * -1.;
@@ -209,14 +209,14 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
   // [deg/s] -> [rad/s]
   auto angVel=r.find("AngVel");
   if(angVel!=r.end()){
-    nlohmann::json av=*angVel;
+    Json av=*angVel;
     vst.rx=static_cast<double>(av["X"])*M_PI/180.;
     vst.ry=static_cast<double>(av["Y"])*M_PI/180.*-1.;
     vst.rz=static_cast<double>(av["Z"])*M_PI/180.*-1.;
   }
   auto pose=r.find("Pose");
   if(pose!=r.end()){
-    nlohmann::json p=*pose;
+    Json p=*pose;
     vst.ox=static_cast<double>(p["X"]);
     vst.oy=static_cast<double>(p["Y"]) * -1.;
     vst.oz=static_cast<double>(p["Z"]);
@@ -224,8 +224,8 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
   }
   // location  +X +Y +Z [cm]  -> +X -Y +Z [m]
   auto loc=r.find("Position");
-  if(pose!=r.end()){
-    nlohmann::json l=*loc;
+  if(loc!=r.end()){
+    Json l=*loc;
     vst.wx = static_cast<double>(l["X"])/ 100.;
     vst.wy = static_cast<double>(l["Y"])/ 100. * -1.;
     vst.wz = static_cast<double>(l["Z"])/ 100.;

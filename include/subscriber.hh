@@ -1,4 +1,4 @@
-﻿// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+﻿// Copyright 2018-2020 Tomoaki Yoshida<yoshida@furo.org>
 /*
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
@@ -12,7 +12,7 @@ http://opensource.org/licenses/mit-license.php
 #include <set>
 #include <string>
 
-#include "nlohmann/json.hpp"
+#include "json.hh"
 
 
 class simSubscriber{
@@ -24,7 +24,7 @@ public:
   bool isValid(){return Sock && Sock->isValid();}
   std::string getLastError(){return lastErr;}
   void addTargetActor(std::string actor);
-  nlohmann::json recvOne();
+  Json recvOne();
   bool waitFor(int timeout_ms);
 
 protected:
@@ -63,39 +63,39 @@ void simSubscriber::addTargetActor(std::string actor){
   Actors.insert(actor);
 }
 
-nlohmann::json simSubscriber::recvOne(){
+Json simSubscriber::recvOne(){
   zmq::message_t msg;
   auto err = Sock->recv(&msg);
   if (err < 0) {
     std::ostringstream os;
     os << " Possible reason: " << zmq_strerror(err) << std::endl;
     lastErr=os.str();
-    return nlohmann::json();
+    return Json();
   }
   lastErr.clear();
   std::string res(msg.data<char>(), msg.size());
   // 受信JSONをパース
-  nlohmann::json j = nlohmann::json::parse(res);
+  Json j = Json::parse(res);
 
   if(j.find("Report")==j.end()){
     std::ostringstream os;
     os<<"Unexpected data received(No Repot field):"<<j<<std::endl;
     lastErr=os.str();
-    return nlohmann::json();
+    return Json();
   }
   auto j2=j["Report"];
   if(j2.find("Name")==j2.end()){
     std::ostringstream os;
     os<<"Unexpected data received(No Name field):"<<j2<<std::endl;
     lastErr=os.str();
-    return nlohmann::json();
+    return Json();
   }
 
   std::string name = j2["Name"];
 
   if(Actors.size()){
     decltype(Actors)::iterator it=Actors.find(name);
-    if(it==Actors.end()) return nlohmann::json();
+    if(it==Actors.end()) return Json();
 
   }
   return j2;
