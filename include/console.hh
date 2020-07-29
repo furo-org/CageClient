@@ -1,11 +1,11 @@
-// Copyright 2018 Tomoaki Yoshida<yoshida@furo.org>
+// Copyright 2018-2020 Tomoaki Yoshida<yoshida@furo.org>
 /*
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
-
+#pragma once
 #include "zmq_nt.hpp"
-#include <nlohmann/json.hpp>
+#include "json.hh"
 #include <sstream>
 
 #include<iostream>
@@ -23,7 +23,7 @@ public:
   bool submitRequest(std::vector<std::string> req, std::string &res);
 
   bool listEndpoints(std::string tag, std::vector<std::string> &res);
-  bool getActorMetadata(std::string actor, nlohmann::json &res);
+  bool getActorMetadata(std::string actor, Json &res);
   bool execConsoleCommand(std::string command, std::string &res);
   bool sendActorMessage(std::string endpoint, std::string command, std::string &res);
 
@@ -70,7 +70,7 @@ bool simConsole::execConsoleCommand(std::string command, std::string &res){
   if(!submitRequest(os.str(),r))
     return false;
 
-  auto rj=nlohmann::json::parse(r);
+  auto rj=Json::parse(r);
   if(rj.count("Result") || rj["Result"].is_string()){
     res=rj["Result"];
     lastErr.clear();
@@ -90,7 +90,7 @@ bool simConsole::sendActorMessage(std::string endpoint, std::string command, std
   if(!submitRequest(std::vector<std::string>{os.str(),command},r))
     return false;
 
-  auto rj=nlohmann::json::parse(r);
+  auto rj=Json::parse(r);
   if(rj.count("Result") || rj["Result"].is_string()){
     res=rj["Result"];
     lastErr.clear();
@@ -111,9 +111,9 @@ bool simConsole::listEndpoints(std::string tag, std::vector<std::string> &res){
   if(!submitRequest(os.str(),r))
       return false;
 
-  auto rj=nlohmann::json::parse(r);
+  auto rj=Json::parse(r);
   if(rj.count("Result") || rj["Result"].is_array()){
-    for (nlohmann::json::iterator it = rj["Result"].begin(),ec=rj["Result"].end();
+    for (Json::iterator it = rj["Result"].begin(),ec=rj["Result"].end();
          it != ec; ++it) {
       res.push_back(*it);
     }
@@ -123,7 +123,7 @@ bool simConsole::listEndpoints(std::string tag, std::vector<std::string> &res){
   lastErr="Unexpected response:"+r;
   return false;
 }
-bool simConsole::getActorMetadata(std::string actor, nlohmann::json &res){
+bool simConsole::getActorMetadata(std::string actor, Json &res){
   std::ostringstream os;
   os << "{\n"
      << "\"Type\" :  \"GetActorMeta\",\n"
@@ -133,7 +133,7 @@ bool simConsole::getActorMetadata(std::string actor, nlohmann::json &res){
   if (!submitRequest(os.str(), r))
     return false;
 
-  auto rj = nlohmann::json::parse(r);
+  auto rj = Json::parse(r);
   if (rj.count("Result")) {
     res=rj["Result"];
     lastErr.clear();

@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
       std::cout<<"Result: "<<std::endl;
       for(const auto &e:res){
         std::cout<<" ["<<e<<"]"<<std::endl;
-        nlohmann::json meta;
+        Json meta;
         if(con.getActorMetadata(e,meta)){
           std::cout<<std::setw(4)<<meta<<std::endl;
         }
