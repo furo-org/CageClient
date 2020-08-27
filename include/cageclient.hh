@@ -35,6 +35,7 @@ public:
     // ground truth
     double ox, oy, oz, ow; // orientation
     double wx, wy, wz; // world position
+    double latitude, longitude;
   };
 
   struct Transform{
@@ -87,6 +88,11 @@ private:
 
   void clearError(){
     ErrorString.clear();
+  }
+
+  double decode60(std::array<double,3> v){
+    double d=v[0], m=v[1], s=v[2];
+    return ((s / 60.) + m) / 60. + d;
   }
 };
 
@@ -265,8 +271,18 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
     vst.wy = static_cast<double>(l["Y"])/ 100. * -1.;
     vst.wz = static_cast<double>(l["Z"])/ 100.;
   }
+  auto lat=r.find("lat");
+  if(lat!=r.end()){
+    Json b = *lat;
+    vst.latitude = decode60({static_cast<double>(b["X"]), static_cast<double>(b["Y"]), static_cast<double>(b["Z"])});
+  }
+  auto lon=r.find("lon");
+  if(lon!=r.end()){
+    Json l = *lat;
+    vst.longitude = decode60({static_cast<double>(l["X"]), static_cast<double>(l["Y"]), static_cast<double>(l["Z"])});  }
   return true;
 }
+
 bool CageAPI::setRpm(double rpmL, double rpmR){
   std::ostringstream os;
   std::string res;
