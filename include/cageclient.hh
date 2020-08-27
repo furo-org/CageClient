@@ -9,8 +9,9 @@ http://opensource.org/licenses/mit-license.php
 #include "subscriber.hh"
 #include <string>
 #include <cmath>
+#include <array>
 
-    class CageAPI{
+class CageAPI{
   std::unique_ptr<zmq::context_t> ZCtx;
   std::string Endpoint;
   std::string VehicleName;
@@ -35,12 +36,19 @@ public:
     double ox, oy, oz, ow; // orientation
     double wx, wy, wz; // world position
   };
+
+  struct Transform{
+    std::array<double,3> trans;   // x, y, z  [m]
+    std::array<double,4> rot;     // w, x, y, z
+  };
+
   struct vehicleInfo{
     std::string name;
     double WheelPerimeterL; //  [m]
     double WheelPerimeterR; //  [m]
     double TreadWidth;      //  [m]
     double ReductionRatio;
+    std::map<std::string, Transform> Transforms;
   } VehicleInfo;
 
   // construct CageAPI object. peer format: "SimulatorAddress/VehicleName"
@@ -62,6 +70,8 @@ public:
   bool setVW(double V, double W);        // [m/s], [rad/s]
 
   std::string getError(){return ErrorString;}
+
+  void setDefaultTransform(std::string frameId, std::array<double,3> translation, std::array<double,4> rotation);
 
 private:
  template <typename F>
@@ -103,6 +113,10 @@ CageAPI::CageAPI(std::string peerAddr, std::string targetVehicle){
 CageAPI::~CageAPI(){
   Subscriber.reset();
   Console.reset();
+}
+
+void CageAPI::setDefaultTransform(std::string frameId, std::array<double, 3> translation, std::array<double, 4> rotation){
+  VehicleInfo.Transforms[frameId]=Transform{translation,rotation};
 }
 
 bool CageAPI::connect(){
@@ -169,10 +183,31 @@ bool CageAPI::connect(){
     return false;
   }
   VehicleInfo.name=endpoint;
-  VehicleInfo.TreadWidth = static_cast<double>(meta["TreadWidth"]) / 100.;
-  VehicleInfo.WheelPerimeterL = static_cast<double>(meta["WheelPerimeterL"]) / 100.;
-  VehicleInfo.WheelPerimeterR = static_cast<double>(meta["WheelPerimeterR"]) / 100.;
-  VehicleInfo.ReductionRatio = static_cast<double>(meta["ReductionRatio"]);
+  if(meta.count("TreadWidth"))
+    VehicleInfo.TreadWidth = static_cast<double>(meta["TreadWidth"]) / 100.;
+  if (meta.count("WheelPerimeterL"))
+    VehicleInfo.WheelPerimeterL = static_cast<double>(meta["WheelPerimeterL"]) / 100.;
+  if (meta.count("WheelPerimeterR"))
+    VehicleInfo.WheelPerimeterR = static_cast<double>(meta["WheelPerimeterR"]) / 100.;
+  if (meta.count("ReductionRatio"))
+    VehicleInfo.ReductionRatio = static_cast<double>(meta["ReductionRatio"]);
+  const std::string transform{"Transform-"};
+  for(const auto &[key,value]: meta.items()){
+    if(key.compare(0,transform.size(), transform)!=0)continue;
+    std::string coord{key.substr(transform.size())};
+    std::cout<<"Found Transform for : "<<coord<<std::endl;
+    Transform t;
+    t.trans[0] = static_cast<double>(value["translation"]["x"]) / 100.;
+    t.trans[1] = static_cast<double>(value["translation"]["y"]) / 100. * -1. ;
+    t.trans[2] = static_cast<double>(value["translation"]["z"]) / 100.;
+    t.rot[0] = static_cast<double>(value["rotation"]["w"])*-1.;
+    t.rot[1] = static_cast<double>(value["rotation"]["x"]);
+    t.rot[2] = static_cast<double>(value["rotation"]["y"])*-1.;
+    t.rot[3] = static_cast<double>(value["rotation"]["z"]);
+    std::cout << "CCli trans:" << t.trans[0] << ", " << t.trans[1] << ", " << t.trans[2] << std::endl;
+    std::cout << "CCli rot:" << t.rot[0] << ", " << t.rot[1] << ", " << t.rot[2] << ", " << t.rot[3] << std::endl;
+    VehicleInfo.Transforms[coord] = t;
+  }
   ErrorString = "";
   return true;
 }
