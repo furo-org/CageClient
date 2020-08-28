@@ -51,6 +51,13 @@ public:
     double ReductionRatio;
     std::map<std::string, Transform> Transforms;
   } VehicleInfo;
+  struct worldInfo{
+    bool valid;
+    double Latitude0;
+    double Longitude0;
+    std::array<double, 3> ReferenceLocation;
+    std::array<double, 4> ReferenceRotation;
+  } WorldInfo;
 
   // construct CageAPI object. peer format: "SimulatorAddress/VehicleName"
   //   note: '/VehicleName' can be omitted.
@@ -128,6 +135,8 @@ void CageAPI::setDefaultTransform(std::string frameId, std::array<double, 3> tra
 bool CageAPI::connect(){
   std::ostringstream ost;
   // ZMQ Context
+  Subscriber.reset();
+  Console.reset();
   ZCtx.reset(new zmq::context_t(1));
   if (!ZCtx || !ZCtx->isValid()) {
     setErrorStrm([](auto &s) {
@@ -171,6 +180,46 @@ bool CageAPI::connect(){
     return false;
   }
 
+  // GeoReference
+  targets.clear();
+  std::string geoReference;
+  if (Console->listEndpoints("GeoReference", targets))
+  {
+    if(targets.size()>1){
+      std::cerr<<"Multiple GeoReference reported. Using the first one ["<<targets[0]<<"]."<<std::endl;
+    }
+    geoReference=targets[0];
+    Json grMeta;
+    if(!Console->getActorMetadata(geoReference, grMeta)){
+      setError("Failed to fetch geo-reference metadata");
+    }else{
+      std::cerr<<"GeoReference Actor ["<<geoReference<<"]"<<std::endl;
+      WorldInfo.valid = false;
+      if (grMeta.count("GeoLocation"))
+      {
+        auto loc=grMeta["GeoLocation"];
+        auto lat=loc["latitude"];
+        auto lon=loc["longitude"];
+        WorldInfo.Latitude0 = decode60({static_cast<double>(lat["x"]), static_cast<double>(lat["y"]), static_cast<double>(lat["z"])});
+        WorldInfo.Longitude0 = decode60({static_cast<double>(lon["x"]), static_cast<double>(lon["y"]), static_cast<double>(lon["z"])});
+        if (grMeta.count("Transform"))
+        {
+          auto trans = grMeta["Transform"];
+          auto t = trans["translation"];
+          WorldInfo.ReferenceLocation[0] = static_cast<double>(t["x"]);
+          WorldInfo.ReferenceLocation[1] = static_cast<double>(t["y"]);
+          WorldInfo.ReferenceLocation[2] = static_cast<double>(t["z"]);
+          auto r = trans["rotation"];
+          WorldInfo.ReferenceRotation[0] = static_cast<double>(r["w"]);
+          WorldInfo.ReferenceRotation[1] = static_cast<double>(r["x"]);
+          WorldInfo.ReferenceRotation[2] = static_cast<double>(r["y"]);
+          WorldInfo.ReferenceRotation[3] = static_cast<double>(r["z"]);
+          WorldInfo.valid = true;
+        }
+      }
+    }
+  }
+
   // Reporter Socket
   Subscriber.reset(new simSubscriber(*ZCtx, ReporterAddr));
   if (!Subscriber || !Subscriber->connect()){
@@ -210,8 +259,6 @@ bool CageAPI::connect(){
     t.rot[1] = static_cast<double>(value["rotation"]["x"]);
     t.rot[2] = static_cast<double>(value["rotation"]["y"])*-1.;
     t.rot[3] = static_cast<double>(value["rotation"]["z"]);
-    std::cout << "CCli trans:" << t.trans[0] << ", " << t.trans[1] << ", " << t.trans[2] << std::endl;
-    std::cout << "CCli rot:" << t.rot[0] << ", " << t.rot[1] << ", " << t.rot[2] << ", " << t.rot[3] << std::endl;
     VehicleInfo.Transforms[coord] = t;
   }
   ErrorString = "";
@@ -278,7 +325,7 @@ bool CageAPI::getStatusOne(CageAPI::vehicleStatus &vst, int timeout_us)
   }
   auto lon=r.find("lon");
   if(lon!=r.end()){
-    Json l = *lat;
+    Json l = *lon;
     vst.longitude = decode60({static_cast<double>(l["X"]), static_cast<double>(l["Y"]), static_cast<double>(l["Z"])});  }
   return true;
 }
