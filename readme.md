@@ -110,6 +110,17 @@ CommActorに接続し、指定したActorにコマンドを送信し、またス
   } VehicleInfo;
 ```
 
+また、シミュレータ側が対応している場合世界の緯度経度基準点の情報がWorldInfoに入ります。
+``` c++
+  struct worldInfo{
+    bool valid;
+    double Latitude0;
+    double Longitude0;
+    std::array<double, 3> ReferenceLocation;
+    std::array<double, 4> ReferenceRotation;
+  } WorldInfo;
+```
+
 ステータス受信の主要なインタフェースは次のとおりです。
 
 ``` c++
@@ -128,10 +139,13 @@ getStatusOneを呼ぶと台車の情報(CageAPI::vehicleStatus)が得られま�
     // ground truth
     double ox, oy, oz, ow; // orientation
     double wx, wy, wz; // world position
+    double latitude, longitude;
   };
 ```
 
 なお、UE4の座標系は左手系ですが、vehicleStatusには(Y軸を反転することで)右手系にしたものが入ります。
+
+latitudeとlongitudeはシミュレータ側が報告できた場合に値が入ります。
 
 ### subscriber.hh
 
