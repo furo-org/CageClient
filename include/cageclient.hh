@@ -10,6 +10,7 @@ http://opensource.org/licenses/mit-license.php
 #include <string>
 #include <cmath>
 #include <array>
+#include <sstream>
 
 class CageAPI{
   std::unique_ptr<zmq::context_t> ZCtx;
@@ -36,6 +37,16 @@ public:
     double ox, oy, oz, ow; // orientation
     double wx, wy, wz; // world position
     double latitude, longitude;
+    std::string toString(){
+      std::ostringstream os;
+      os << "Clock: " << simClock << "\n"
+         << "lrpm: " << lrpm << "\t rrpm: " << rrpm << "\n"
+         << "accel  x: " << ax << "\t y: " << ay << "\t z: " << az << "\n"
+         << "angvel x: " << rx << "\t y: " << ry << "\t z: " << rz << "\n"
+         <<std::setprecision(10)
+         << "latitude: "<<latitude<<"\t longitude: "<<longitude<<std::endl;
+      return os.str();
+    }
   };
 
   struct Transform{
