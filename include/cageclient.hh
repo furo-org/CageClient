@@ -264,7 +264,9 @@ bool CageAPI::connect() {
   if (meta.count("ReductionRatio"))
     VehicleInfo.ReductionRatio = static_cast<double>(meta["ReductionRatio"]);
   const std::string transform{"Transform-"};
-  for (const auto &[key, value] : meta.items()) {
+  for (const auto &kv : meta.items()) {
+    const auto &key=kv.key();
+    const auto &value = kv.value();
     if (key.compare(0, transform.size(), transform) != 0) continue;
     std::string coord{key.substr(transform.size())};
     std::cout << "Found Transform for : " << coord << std::endl;
