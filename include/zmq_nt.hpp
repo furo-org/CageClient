@@ -435,7 +435,10 @@ public:
   inline void close() ZMQ_NOTHROW {
     if (ptr == NULL) return;
 
-    int rc = zmq_ctx_destroy(ptr);
+    int rc=0;
+    do{
+      rc = zmq_ctx_destroy(ptr);
+    } while (errno == EINTR && rc!=0);
     ZMQ_ASSERT(rc == 0);
     ptr = NULL;
   }
