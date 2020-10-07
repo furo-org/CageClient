@@ -16,10 +16,10 @@ UE4用移動ロボットシミュレータプラグインであるCageの、通�
 
 ### 動作環境および依存ライブラリ
 
-実際にビルドを確認している環境は Ubuntu 18.04です。
-標準C++ライブラリのほか、[ZeroMQ](http://zeromq.org)と[nlohmann::json](https://github.com/nlohmann/json)を使用しています。これらのライブラリが動作する環境であればUbuntu 18.04以外でも多くの環境でビルドできることが期待できます。
+実際にビルドを確認している環境は Ubuntu 18.04および20.04です。
+標準C++ライブラリのほか、[ZeroMQ](http://zeromq.org)と[nlohmann::json](https://github.com/nlohmann/json)を使用しています。これらのライブラリが動作する環境であればUbuntu 18.04/20.04以外でも多くの環境でビルドできることが期待できます。
 
-なお、ROSのサンプルは Ubuntu 18.04 上の [ROS Melodic Morenia](http://wiki.ros.org/melodic/Installation) での動作を確認しています。また、Pythonのサンプルには [pyzmq](https://pyzmq.readthedocs.io/en/latest/) が必要です。
+なお、ROSのサンプルは Ubuntu 20.04 上の [ROS Noetic Ninjemys](http://wiki.ros.org/noetic/Installation) での動作を確認しています。また、Pythonのサンプルには [pyzmq](https://pyzmq.readthedocs.io/en/latest/) が必要です。
 
 ### License
 
@@ -27,7 +27,7 @@ This software is available under the [MIT License](https://opensource.org/licens
 
 ## Quick Start
 
-まずCage Pluginを導入したシミュレータを用意してください。ちょっと試してみるだけならば[VTC2018](https://github.com/furo-org/VTC2018)を[パッケージしたバイナリ(64bit Windows版)](https://chibakoudai-my.sharepoint.com/:u:/g/personal/yoshida_tomoaki_p_chibakoudai_jp/ER00YHh9YYFEpBnFCl16Ug4BnmRve_PuS1y1sB2-dvryDw?e=cxDaMb)を使ってみてください。zipを展開してVTC2018.exeを起動するだけです。全画面とウィンドウモードの切り替えはAlt-Enterで、終了はAlt-F4です。
+まずCage Pluginを導入したシミュレータを用意してください。ちょっと試してみるだけならば[VTC](https://github.com/furo-org/VTC)を[パッケージしたバイナリ(64bit Windows版)](https://github.com/furo-org/VTC/releases)を使ってみてください。zipを展開してVTC2018.exeを起動するだけです。全画面とウィンドウモードの切り替えはAlt-Enterで、終了はAlt-F4です。
 なお、パッケージ版はUnreal Editorとは違い世界に干渉する手段がかなり限られますのでその点は注意が必要です。
 
 ROSで動くプログラムと接続して使う場合には[cage_ros_stack](https://github.com/furo-org/cage_ros_stack)を(必要に応じて修正して)使うと良いでしょう。ROSで駆動されるもの以外のロボットのインタフェースを使う場合cage_ros_bridgeと同等のプログラムを用意する必要があります。cageclient.hhにCageに実装してあるロボットPuffinを動かすためのインタフェースを用意してあります。これを利用して既存の実機用フレームワークに適合するプログラムを作ってください。
@@ -89,14 +89,17 @@ CommActorに接続し、指定したActorにコマンドを送信し、またス
   bool connect();
 ```
 
-コマンド送信は次の2つです。
+コマンド送信は次の3つです。
 
 ``` c++
   bool setRpm(double rpmL, double rpmR);
   bool setVW(double V, double W);        // [m/s], [rad/s]
+  bool setFLW(double F, double L, double W);        // [m/s], [rad/s]
 ```
 
-これらを呼ぶと直ちにコマンドが送信されます。setRpmもsetVWもどちらも車輪の回転数を指示するコマンドで、setVWの場合はシミュレータ側で支持された速度を達成する左右の目標回転速度を計算します。setRpmはこれをバイパスして直接目標回転速度を与えることができます。通常はどちらか一つを使います。
+これらを呼ぶと直ちにコマンドが送信されます。setRpmもsetVWもどちらも車輪の回転数を指示するコマンドで、setVWの場合はシミュレータ側で支持された速度を達成する左右の目標回転速度を計算します。setRpmはこれをバイパスして直接目標回転速度を与えることができます。setFLWは二自由度の並進移動を支持できるコマンドで、前後方向をFに、左を正とした左右方向をLに与えます。Puffinのような一自由度の並進移動しかできないロボットにsetFLWでコマンドを送った場合左右方向は無視されます。
+通常はsetRpm, setVW, setFLWのどれか一つを使います。
+
 
 適切な回転速度を求めるには車輪の大きさと配置を知る必要がありますが、これはconnect()時にシミュレータから値を取得し、CageAPI::VehicleInfo に格納されます。
 
