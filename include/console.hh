@@ -43,6 +43,7 @@ simConsole::simConsole(zmq::context_t &ctx, std::string server)
   int timeout = 1000;
   Sock->setsockopt(ZMQ_RCVTIMEO, timeout);
   Sock->setsockopt(ZMQ_SNDTIMEO, timeout);
+  Sock->setsockopt(ZMQ_LINGER, timeout);
 }
 
 bool simConsole::connect() {
@@ -56,7 +57,7 @@ bool simConsole::connect() {
   return true;
 }
 
-void simConsole::close() { Sock->close(); }
+void simConsole::close() { if(!Sock) return; Sock->close(); Sock.release(); }
 
 bool simConsole::execConsoleCommand(std::string command, std::string &res) {
   std::ostringstream os;

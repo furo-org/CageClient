@@ -40,6 +40,7 @@ simSubscriber::simSubscriber(zmq::context_t &ctx, std::string server)
   int timeout = 1000;
   Sock->setsockopt(ZMQ_RCVTIMEO, timeout);
   Sock->setsockopt(ZMQ_SNDTIMEO, timeout);
+  Sock->setsockopt(ZMQ_LINGER, timeout);
 }
 
 bool simSubscriber::connect() {
@@ -54,7 +55,7 @@ bool simSubscriber::connect() {
   return true;
 }
 
-void simSubscriber::close() { Sock->close(); }
+void simSubscriber::close() { if(!Sock) return; Sock->close();Sock.release(); }
 
 void simSubscriber::addTargetActor(std::string actor) { Actors.insert(actor); }
 
