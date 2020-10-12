@@ -147,8 +147,8 @@ void CageAPI::setDefaultTransform(std::string           frameId,
 bool CageAPI::connect() {
   std::ostringstream ost;
   // ZMQ Context
-  Subscriber.release();
-  Console.release();
+  Subscriber.reset();
+  Console.reset();
   ZCtx.reset(new zmq::context_t(1));
   if (!ZCtx || !ZCtx->isValid()) {
     setErrorStrm([](auto &s) {
@@ -160,8 +160,8 @@ bool CageAPI::connect() {
   Console.reset(new simConsole(*ZCtx, ConsoleAddr));
   if (!Console || !Console->connect()) {
     setError(Console->getLastError());
-    Console.release();
-    ZCtx.release();
+    Console.reset();
+    ZCtx.reset();
     return false;
   }
 
@@ -171,8 +171,8 @@ bool CageAPI::connect() {
     setErrorStrm([&](auto &s) {
       s << "Unable to get endpoint list: " << Console->getLastError();
     });
-    Console.release();
-    ZCtx.release();
+    Console.reset();
+    ZCtx.reset();
     return false;
   }
 
@@ -189,8 +189,8 @@ bool CageAPI::connect() {
   }
   if (endpoint.size() == 0) {
     setError("No matching vehicle found.");
-    Console.release();
-    ZCtx.release();
+    Console.reset();
+    ZCtx.reset();
     return false;
   }
 
@@ -240,9 +240,9 @@ bool CageAPI::connect() {
   Subscriber.reset(new simSubscriber(*ZCtx, ReporterAddr));
   if (!Subscriber || !Subscriber->connect()) {
     setError(Subscriber->getLastError());
-    Subscriber.release();
-    Console.release();
-    ZCtx.release();
+    Subscriber.reset();
+    Console.reset();
+    ZCtx.reset();
     return false;
   }
 
